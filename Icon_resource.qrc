@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/my_images">
+        <file>icon/WEB_scan.png</file>
+        <file>icon/NIC.png</file>
+        <file>icon/slave_scan.png</file>
+        <file>icon/find.png</file>
+    </qresource>
+</RCC>
