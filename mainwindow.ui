@@ -34,24 +34,17 @@
      <height>21</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuAdapter_A">
+   <widget class="StayOpenMenu" name="menuAdapter_A">
     <property name="title">
      <string>Adapter(&amp;A)</string>
     </property>
-    <widget class="QMenu" name="menuSelect_Adapter">
-     <property name="title">
-      <string>Select Adapter</string>
-     </property>
-    </widget>
     <addaction name="actionScan_Adapter"/>
-    <addaction name="menuSelect_Adapter"/>
    </widget>
-   <widget class="QMenu" name="menuSlave_S">
+   <widget class="StayOpenMenu" name="menuSlave_S">
     <property name="title">
      <string>Slave(&amp;S)</string>
     </property>
     <addaction name="actionScan_slave"/>
-    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuProgram_P">
     <property name="title">
@@ -73,12 +66,13 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionScan_Adapter"/>
    <addaction name="actionScan_slave"/>
   </widget>
   <action name="actionScan_Adapter">
    <property name="icon">
     <iconset resource="Icon_resource.qrc">
-     <normaloff>:/my_images/icon/WEB_scan.png</normaloff>:/my_images/icon/WEB_scan.png</iconset>
+     <normaloff>:/my_images/icon/WINDOWS10ICON/WINDOWS10ICON/Win 10 Icon (408).png</normaloff>:/my_images/icon/WINDOWS10ICON/WINDOWS10ICON/Win 10 Icon (408).png</iconset>
    </property>
    <property name="text">
     <string>Scan Adapter</string>
@@ -90,21 +84,23 @@
   <action name="actionScan_slave">
    <property name="icon">
     <iconset resource="Icon_resource.qrc">
-     <normaloff>:/my_images/icon/find.png</normaloff>:/my_images/icon/find.png</iconset>
+     <normaloff>:/my_images/icon/WINDOWS10ICON/WINDOWS10ICON/Win 10 Icon (314).png</normaloff>:/my_images/icon/WINDOWS10ICON/WINDOWS10ICON/Win 10 Icon (314).png</iconset>
    </property>
    <property name="text">
     <string>Scan slave</string>
    </property>
    <property name="statusTip">
-    <string>Scan the slaves connected to the current NIC</string>
-   </property>
-  </action>
-  <action name="actionAdapter">
-   <property name="text">
-    <string>adapter01</string>
+    <string>Scan the slaves connected to the current Network Adapter</string>
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>StayOpenMenu</class>
+   <extends>QMenu</extends>
+   <header location="global">stayopenmenu.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="Icon_resource.qrc"/>
  </resources>
