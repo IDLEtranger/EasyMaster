@@ -17,5 +17,8 @@
         <file>icon/WINDOWS10ICON/WINDOWS10ICON/Win 10 Icon (178).png</file>
         <file>icon/WINDOWS10ICON/WINDOWS10ICON/Win 10 Icon (314).png</file>
         <file>icon/WINDOWS10ICON/WINDOWS10ICON/Win 10 Icon (420).png</file>
+        <file>icon/green light.png</file>
+        <file>icon/grey light.png</file>
+        <file>icon/red light.png</file>
     </qresource>
 </RCC>

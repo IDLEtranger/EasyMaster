@@ -6,23 +6,107 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>720</width>
-    <height>450</height>
+    <width>820</width>
+    <height>612</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QTextEdit" name="textEdit">
+   <widget class="QSplitter" name="splitter_2">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>10</y>
-      <width>301</width>
-      <height>341</height>
+      <x>20</x>
+      <y>20</y>
+      <width>781</width>
+      <height>491</height>
      </rect>
     </property>
+    <property name="orientation">
+     <enum>Qt::Vertical</enum>
+    </property>
+    <property name="handleWidth">
+     <number>15</number>
+    </property>
+    <widget class="QSplitter" name="splitter">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="handleWidth">
+      <number>15</number>
+     </property>
+     <widget class="QTreeWidget" name="treeSlaves">
+      <column>
+       <property name="text">
+        <string notr="true">1</string>
+       </property>
+      </column>
+     </widget>
+     <widget class="QWidget" name="layoutWidget">
+      <layout class="QGridLayout" name="gridLayout">
+       <property name="leftMargin">
+        <number>8</number>
+       </property>
+       <property name="topMargin">
+        <number>8</number>
+       </property>
+       <property name="rightMargin">
+        <number>8</number>
+       </property>
+       <property name="bottomMargin">
+        <number>8</number>
+       </property>
+       <property name="horizontalSpacing">
+        <number>18</number>
+       </property>
+       <property name="verticalSpacing">
+        <number>20</number>
+       </property>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_name">
+         <property name="text">
+          <string>Name :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLineEdit" name="lineEdit_name"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_index">
+         <property name="text">
+          <string>Index :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLineEdit" name="lineEdit_index"/>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_current_value">
+         <property name="text">
+          <string>Current Value :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLineEdit" name="lineEdit_current_value"/>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_target_value">
+         <property name="text">
+          <string>Target Value :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QLineEdit" name="lineEdit_target_value"/>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+    <widget class="QTextBrowser" name="Info_Browser"/>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -30,7 +114,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>720</width>
+     <width>820</width>
      <height>21</height>
     </rect>
    </property>
@@ -44,7 +128,6 @@
     <property name="title">
      <string>Slave(&amp;S)</string>
     </property>
-    <addaction name="actionScan_slave"/>
    </widget>
    <widget class="QMenu" name="menuProgram_P">
     <property name="title">
@@ -67,7 +150,17 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionScan_Adapter"/>
-   <addaction name="actionScan_slave"/>
+  </widget>
+  <widget class="QToolBar" name="state_indicator_bar">
+   <property name="windowTitle">
+    <string>toolBar_2</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>BottomToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
   </widget>
   <action name="actionScan_Adapter">
    <property name="icon">
@@ -79,18 +172,6 @@
    </property>
    <property name="statusTip">
     <string>Scan for available Network Adapter</string>
-   </property>
-  </action>
-  <action name="actionScan_slave">
-   <property name="icon">
-    <iconset resource="Icon_resource.qrc">
-     <normaloff>:/my_images/icon/WINDOWS10ICON/WINDOWS10ICON/Win 10 Icon (314).png</normaloff>:/my_images/icon/WINDOWS10ICON/WINDOWS10ICON/Win 10 Icon (314).png</iconset>
-   </property>
-   <property name="text">
-    <string>Scan slave</string>
-   </property>
-   <property name="statusTip">
-    <string>Scan the slaves connected to the current Network Adapter</string>
    </property>
   </action>
  </widget>
