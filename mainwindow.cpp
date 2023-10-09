@@ -6,23 +6,30 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this); // set up ui from mainwindow.ui
+
+    /******** create communication object ********/
     ethercat_manager = new EtherCATManager(); // create communication object
 
-    connect(ethercat_manager, &EtherCATManager::update_browser,
+    /******** connect slot with signal ********/
+    connect(ethercat_manager, &EtherCATManager::updateInfoBrowser,
             this, &MainWindow::updateInfoBrowserSlot);
 
+    /******** initialize ********/
+    Info_Browser_cursor = ui->Info_Browser->textCursor();
     interface_init(ethercat_manager); // user interface initialization
-    build_tree_header(); // build tree header
+    build_tree_header(); // build slaveinfo tree header
+
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
     delete ethercat_manager;
-    delete menuSelect_Adapter;
 };
 
 
+
+/******** SLOT Function ********/
 
 /**
  * @brief MainWindow::on_actionScan_Adapter_triggered
@@ -41,10 +48,47 @@ void MainWindow::on_actionScan_Adapter_triggered()
  */
 void MainWindow::updateInfoBrowserSlot(const QString& text)
 {
-    ui->Info_Browser->append(text);
+    Info_Browser_cursor.movePosition(QTextCursor::End);
+    Info_Browser_cursor.insertText(text);
 }
 
 
+/**
+ * @brief MainWindow::change_state_indicator_slot
+ * change state indicator, called by ethercat_manager->change_state_indicator()
+ */
+void MainWindow::change_state_indicator_slot(ec_state current_state)
+{
+    static ec_state last_state = EC_STATE_NONE;
+
+    // use map to store state and corresponding QAction
+    QMap<ec_state, QAction*> stateToAction = {
+        {EC_STATE_NONE, nullptr}, // or another QAction if EC_STATE_NONE has one
+        {EC_STATE_BOOT, ui->action_Boot_Strap},
+        {EC_STATE_INIT, ui->action_Init},
+        {EC_STATE_PRE_OP, ui->action_Pre_OP},
+        {EC_STATE_SAFE_OP, ui->action_Safe_OP},
+        {EC_STATE_OPERATIONAL, ui->action_OP},
+        {EC_STATE_ACK, nullptr},
+        {EC_STATE_ERROR, nullptr}
+    };
+
+    auto setIconGray = [&](ec_state state) {
+        if(stateToAction.contains(state) && stateToAction[state])
+            stateToAction[state]->setIcon(QIcon(":/my_images/icon/grey light.png"));
+    };
+
+    // set icon according to last state
+    setIconGray(last_state);
+
+    // set icon according to current state
+    if(stateToAction.contains(current_state) && stateToAction[current_state])
+        stateToAction[current_state]->setIcon(QIcon(":/my_images/icon/green light.png"));
+
+    last_state = current_state;
+}
+
+/******** Private Function ********/
 
 /**
  * @brief MainWindow::interface_init
@@ -55,18 +99,26 @@ void MainWindow::interface_init(EtherCATManager *ethercat_manager)
     setWindowTitle(tr("EasyMaster"));
     setWindowIcon(QIcon(":/my_images/icon/WINDOWS10ICON/WINDOWS10ICON/Win 10 Icon (156).png"));
 
+    // set up state indicator bar separator style
+    ui->state_indicator_bar->setStyleSheet("QToolBar::separator { background: transparent; border: none; width: 20px; }");
+
+    // show current slave in state indicator bar
+    QWidget *spacerWidget = new QWidget();
+    QWidget *leftSpacerWidget = new QWidget();
+    spacerWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    leftSpacerWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+    leftSpacerWidget->setFixedWidth(20);
+    ui->state_indicator_bar->addWidget(spacerWidget);
+    ui->state_indicator_bar->addWidget(new QLabel("Current Slave:"));
+    ui->state_indicator_bar->addWidget(leftSpacerWidget);
+
     // create menu for menuAdapter_A
     menuSelect_Adapter = new StayOpenMenu(ui->menuAdapter_A);
-
     menuSelect_Adapter->setTitle(tr("Select Adapter"));
-
     ui->menuAdapter_A->addMenu(menuSelect_Adapter);
 
-    update_AdapterList(ethercat_manager->adapter_info_read()); // update adapter list according to adapter_info
-
-    // render indicator light
-
-
+    // add default action to menuSelect_Adapter
+    menuSelect_Adapter->addAction("No adapter found");
 }
 
 
@@ -94,9 +146,12 @@ void MainWindow::update_AdapterList(QMap<QString,QString> adapter_info)
             menuSelect_Adapter->addAction(CurrentAction_adapter);  // add to menu
             adapterGroup->addAction(CurrentAction_adapter);  // add to group
 
-            connect(CurrentAction_adapter, &QAction::triggered, [this, CurrentAction_adapter, key = iterator_adapter.key(), value = iterator_adapter.value()]() {
+            connect(CurrentAction_adapter, &QAction::triggered, this, [this, CurrentAction_adapter, key = iterator_adapter.key(), value = iterator_adapter.value()]() {
                 ethercat_manager->current_selected_adapter = {key, value};
-                ethercat_manager->connect2slave();
+                ui->Info_Browser->clear(); // clear info browser
+
+                std::thread slaveinfo_thread([&]() { ethercat_manager->connect2slaves(); });
+                slaveinfo_thread.detach();
             });
 
             ++iterator_adapter;
@@ -143,6 +198,3 @@ void MainWindow::init_tree()
 {
 
 }
-
-
-

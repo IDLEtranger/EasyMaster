@@ -7,6 +7,8 @@
 #include <QTimer>
 #include <QActionGroup>
 #include <QTreeWidgetItem>
+#include <QTextCursor>
+#include <thread>
 
 #include <inttypes.h>
 #include "ethercat.h"
@@ -31,6 +33,7 @@ class MainWindow : public QMainWindow
         Ui::MainWindow *ui;
         EtherCATManager *ethercat_manager;
         StayOpenMenu *menuSelect_Adapter; // menu store adapter list
+        QTextCursor Info_Browser_cursor; // cursor for info browser
 
         void update_AdapterList(QMap<QString,QString> adapter_info); // update adapter list according to adapter_info
         void interface_init(EtherCATManager *ethercat_manager); // user interface initialization
@@ -44,6 +47,7 @@ class MainWindow : public QMainWindow
 
     public slots:
         void updateInfoBrowserSlot(const QString& text); // update info browser slot
+        void change_state_indicator_slot(ec_state current_state); // change state indicator slot
 };
 
 #endif // MAINWINDOW_H

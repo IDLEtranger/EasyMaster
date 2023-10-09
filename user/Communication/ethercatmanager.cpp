@@ -6,6 +6,8 @@ EtherCATManager::EtherCATManager()
     get_netinfo();
 }
 
+
+
 /**
  * @brief EtherCATManager::get_netinfo
  * get net information
@@ -23,33 +25,16 @@ void EtherCATManager::get_netinfo(void)
 
 
 
-/**
- * @brief EtherCATManager::get_ODlist
- * get object directory list
- */
-void EtherCATManager::get_ODlist(void)
-{
-    for(int i = 1; i <= ec_slavecount ; i++)
-    {
-        ec_readODlist(i, &ODlist);
-        // display ever OD description in debug console
-        //qDebug() << "ODlist of slave " << i << " : ";
-        //qDebug() << ODlist->Index << ODlist->Name << ODlist->DataType << ODlist->Entries << ODlist->ObjectCode << ODlist->MaxSub;
-    }
-}
-
-
-
-/**
- * @brief EtherCATManager::pdoTaskTimout
- * timer slot function, used for process data communication
- */
-void EtherCATManager::pdoTaskTimout(void)
-{
-    int wkc = 0;
-    ec_send_processdata();
-    wkc = ec_receive_processdata(EC_TIMEOUTRET);
-}
+///**
+// * @brief EtherCATManager::pdoTaskTimout
+// * timer slot function, used for process data communication
+// */
+//void EtherCATManager::pdoTaskTimout(void)
+//{
+//    int wkc = 0;
+//    ec_send_processdata();
+//    wkc = ec_receive_processdata(EC_TIMEOUTRET);
+//}
 
 
 
@@ -66,87 +51,19 @@ QMap<QString,QString> EtherCATManager::adapter_info_read(void)
 
 /**
  * @brief myMainWindow::connectToSlavers
- * 连接按钮槽函数，用于配置从站
+ *
  */
-void EtherCATManager::connect2slave(void)
+void EtherCATManager::connect2slaves(void)
 {
     QByteArray byteArray = current_selected_adapter.desc.toUtf8();
-    char* eth = byteArray.data();
-
+    char* ifname = byteArray.data();
     // connect to slave
-    emit update_browser("start soem\n");
+    LOG_DISPLAY("SOEM (Simple Open EtherCAT Master) ON\n");
 
-    if(ec_init(eth)) // if OK
-    {
-        emit update_browser("ec_init on ifname "+ current_selected_adapter.name + " succeeded.\n");
-        emit update_browser(QString::asprintf("ifname desc is %s", eth));
+    // display slaves information in LOG box
+    slaveinfo(ifname);
 
-        // scan slaves
-        if(ec_config_init(FALSE) > 0) // slave count > 0
-        {
-            emit update_browser(QString::asprintf("%d slaves found and configured.\n", ec_slavecount));
-//            // modulate DC time
-//            ec_dcsync0(1, TRUE, 25000000,0);
-
-//            ec_config_map(&IOmap);
-
-//            ec_configdc();
-
-//            emit update_browser("Slaves mapped, state to SAFE_OP.\n");
-
-//            // wait for all slaves to reach SAFE_OP state
-//            ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
-
-//            emit update_browser(QString::asprintf("segments : %d : %d %d %d %d\n",ec_group[0].nsegments ,ec_group[0].IOsegment[0],ec_group[0].IOsegment[1],ec_group[0].IOsegment[2],ec_group[0].IOsegment[3]));
-//            emit update_browser("Request operational state \n");
-
-//            ec_slave[0].state = EC_STATE_OPERATIONAL;
-
-//            // Send a frame of PDO and prepare to enter the OP state
-//            ec_send_processdata();
-//            ec_receive_processdata(EC_TIMEOUTRET);
-
-//            // start PDO timer
-//            pdotimer->start(20);
-
-//            // request OP state for all slaves
-//            ec_writestate(0);
-
-//            // wait for all slaves to reach OP state
-//            int num_try = 210;
-//            do
-//            {
-//                ec_statecheck(0, EC_STATE_OPERATIONAL, 50000);
-//            }
-//            while (num_try-- && (ec_slave[0].state != EC_STATE_OPERATIONAL));
-
-//            if (ec_slave[0].state == EC_STATE_OPERATIONAL )
-//            {
-//                emit update_browser("Operational state reached for all slaves.\n");
-//            }
-//            else
-//            {
-//                emit update_browser("Not all slaves reached operational state.\n");
-//                for(int i = 1; i<=ec_slavecount ; i++)
-//                {
-//                    if(ec_slave[i].state != EC_STATE_OPERATIONAL)
-//                    {
-//                        printf("Slave %d State=0x%2.2x StatusCode=0x%4.4x : %s\n",
-//                               i, ec_slave[i].state, ec_slave[i].ALstatuscode, ec_ALstatuscode2string(ec_slave[i].ALstatuscode));
-//                    }
-//                }
-//                pdotimer->stop();
-//                ec_close();
-//            }
-        }
-    }
-    else
-    {
-        // close connection
-        emit update_browser("Init failed, close soem.\n");
-        pdotimer->stop();
-        ec_close();
-    }
+    LOG_DISPLAY("End program\n");
 }
 
 
@@ -161,76 +78,76 @@ char* EtherCATManager::dtype2string(uint16 dtype)
     switch(dtype)
     {
     case ECT_BOOLEAN:
-        sprintf(hstr, "BOOLEAN");
+        sprintf_s(hstr, sizeof(hstr), "BOOLEAN");
         break;
     case ECT_INTEGER8:
-        sprintf(hstr, "INTEGER8");
+        sprintf_s(hstr, sizeof(hstr), "INTEGER8");
         break;
     case ECT_INTEGER16:
-        sprintf(hstr, "INTEGER16");
+        sprintf_s(hstr, sizeof(hstr), "INTEGER16");
         break;
     case ECT_INTEGER32:
-        sprintf(hstr, "INTEGER32");
+        sprintf_s(hstr, sizeof(hstr), "INTEGER32");
         break;
     case ECT_INTEGER24:
-        sprintf(hstr, "INTEGER24");
+        sprintf_s(hstr, sizeof(hstr), "INTEGER24");
         break;
     case ECT_INTEGER64:
-        sprintf(hstr, "INTEGER64");
+        sprintf_s(hstr, sizeof(hstr), "INTEGER64");
         break;
     case ECT_UNSIGNED8:
-        sprintf(hstr, "UNSIGNED8");
+        sprintf_s(hstr, sizeof(hstr), "UNSIGNED8");
         break;
     case ECT_UNSIGNED16:
-        sprintf(hstr, "UNSIGNED16");
+        sprintf_s(hstr, sizeof(hstr), "UNSIGNED16");
         break;
     case ECT_UNSIGNED32:
-        sprintf(hstr, "UNSIGNED32");
+        sprintf_s(hstr, sizeof(hstr), "UNSIGNED32");
         break;
     case ECT_UNSIGNED24:
-        sprintf(hstr, "UNSIGNED24");
+        sprintf_s(hstr, sizeof(hstr), "UNSIGNED24");
         break;
     case ECT_UNSIGNED64:
-        sprintf(hstr, "UNSIGNED64");
+        sprintf_s(hstr, sizeof(hstr), "UNSIGNED64");
         break;
     case ECT_REAL32:
-        sprintf(hstr, "REAL32");
+        sprintf_s(hstr, sizeof(hstr), "REAL32");
         break;
     case ECT_REAL64:
-        sprintf(hstr, "REAL64");
+        sprintf_s(hstr, sizeof(hstr), "REAL64");
         break;
     case ECT_BIT1:
-        sprintf(hstr, "BIT1");
+        sprintf_s(hstr, sizeof(hstr), "BIT1");
         break;
     case ECT_BIT2:
-        sprintf(hstr, "BIT2");
+        sprintf_s(hstr, sizeof(hstr), "BIT2");
         break;
     case ECT_BIT3:
-        sprintf(hstr, "BIT3");
+        sprintf_s(hstr, sizeof(hstr), "BIT3");
         break;
     case ECT_BIT4:
-        sprintf(hstr, "BIT4");
+        sprintf_s(hstr, sizeof(hstr), "BIT4");
         break;
     case ECT_BIT5:
-        sprintf(hstr, "BIT5");
+        sprintf_s(hstr, sizeof(hstr), "BIT5");
         break;
     case ECT_BIT6:
-        sprintf(hstr, "BIT6");
+        sprintf_s(hstr, sizeof(hstr), "BIT6");
         break;
     case ECT_BIT7:
-        sprintf(hstr, "BIT7");
+        sprintf_s(hstr, sizeof(hstr), "BIT7");
         break;
     case ECT_BIT8:
-        sprintf(hstr, "BIT8");
+        sprintf_s(hstr, sizeof(hstr), "BIT8");
         break;
     case ECT_VISIBLE_STRING:
-        sprintf(hstr, "VISIBLE_STRING");
+        sprintf_s(hstr, sizeof(hstr), "VISIBLE_STRING");
         break;
     case ECT_OCTET_STRING:
-        sprintf(hstr, "OCTET_STRING");
+        sprintf_s(hstr, sizeof(hstr), "OCTET_STRING");
         break;
     default:
-        sprintf(hstr, "Type 0x%4.4X", dtype);
+        sprintf_s(hstr, sizeof(hstr), "Type 0x%4.4X", dtype);
     }
     return hstr;
 }
@@ -271,50 +188,50 @@ char* EtherCATManager::SDO2string(uint16 slave, uint16 index, uint8 subidx, uint
         {
         case ECT_BOOLEAN:
             u8 = (uint8*) &usdo[0];
-            if (*u8) sprintf(hstr, "TRUE");
-            else sprintf(hstr, "FALSE");
+            if (*u8) sprintf_s(hstr, sizeof(hstr), "TRUE");
+            else sprintf_s(hstr, sizeof(hstr), "FALSE");
             break;
         case ECT_INTEGER8:
             i8 = (int8*) &usdo[0];
-            sprintf(hstr, "0x%2.2x %d", *i8, *i8);
+            sprintf_s(hstr, sizeof(hstr), "0x%2.2x %d", *i8, *i8);
             break;
         case ECT_INTEGER16:
             i16 = (int16*) &usdo[0];
-            sprintf(hstr, "0x%4.4x %d", *i16, *i16);
+            sprintf_s(hstr, sizeof(hstr), "0x%4.4x %d", *i16, *i16);
             break;
         case ECT_INTEGER32:
         case ECT_INTEGER24:
             i32 = (int32*) &usdo[0];
-            sprintf(hstr, "0x%8.8x %d", *i32, *i32);
+            sprintf_s(hstr, sizeof(hstr), "0x%8.8x %d", *i32, *i32);
             break;
         case ECT_INTEGER64:
             i64 = (int64*) &usdo[0];
-            sprintf(hstr, "0x%16.16" PRIx64 " %" PRId64, *i64, *i64);
+            sprintf_s(hstr, sizeof(hstr), "0x%16.16" PRIx64 " %" PRId64, *i64, *i64);
             break;
         case ECT_UNSIGNED8:
             u8 = (uint8*) &usdo[0];
-            sprintf(hstr, "0x%2.2x %u", *u8, *u8);
+            sprintf_s(hstr, sizeof(hstr), "0x%2.2x %u", *u8, *u8);
             break;
         case ECT_UNSIGNED16:
             u16 = (uint16*) &usdo[0];
-            sprintf(hstr, "0x%4.4x %u", *u16, *u16);
+            sprintf_s(hstr, sizeof(hstr), "0x%4.4x %u", *u16, *u16);
             break;
         case ECT_UNSIGNED32:
         case ECT_UNSIGNED24:
             u32 = (uint32*) &usdo[0];
-            sprintf(hstr, "0x%8.8x %u", *u32, *u32);
+            sprintf_s(hstr, sizeof(hstr), "0x%8.8x %u", *u32, *u32);
             break;
         case ECT_UNSIGNED64:
             u64 = (uint64*) &usdo[0];
-            sprintf(hstr, "0x%16.16" PRIx64 " %" PRIu64, *u64, *u64);
+            sprintf_s(hstr, sizeof(hstr), "0x%16.16" PRIx64 " %" PRIu64, *u64, *u64);
             break;
         case ECT_REAL32:
             sr = (float*) &usdo[0];
-            sprintf(hstr, "%f", *sr);
+            sprintf_s(hstr, sizeof(hstr), "%f", *sr);
             break;
         case ECT_REAL64:
             dr = (double*) &usdo[0];
-            sprintf(hstr, "%f", *dr);
+            sprintf_s(hstr, sizeof(hstr), "%f", *dr);
             break;
         case ECT_BIT1:
         case ECT_BIT2:
@@ -325,21 +242,21 @@ char* EtherCATManager::SDO2string(uint16 slave, uint16 index, uint8 subidx, uint
         case ECT_BIT7:
         case ECT_BIT8:
             u8 = (uint8*) &usdo[0];
-            sprintf(hstr, "0x%x", *u8);
+            sprintf_s(hstr, sizeof(hstr), "0x%x", *u8);
             break;
         case ECT_VISIBLE_STRING:
-            strcpy(hstr, usdo);
+            strcpy_s(hstr, sizeof(hstr), usdo);
             break;
         case ECT_OCTET_STRING:
             hstr[0] = 0x00;
             for (i = 0 ; i < length ; i++)
             {
-                sprintf(es, "0x%2.2x ", usdo[i]);
-                strcat( hstr, es);
+                sprintf_s(es, sizeof(es), "0x%2.2x ", usdo[i]);
+                strcat_s(hstr, sizeof(hstr), es);
             }
             break;
         default:
-            sprintf(hstr, "Unknown type");
+            sprintf_s(hstr, sizeof(hstr), "Unknown type");
         }
         return hstr;
     }
@@ -418,16 +335,19 @@ int EtherCATManager::slaveinfo_PDOassign(uint16 slave, uint16 PDOassign, int map
 
                     /* read object entry from dictionary if not a filler (0x0000:0x00) */
                     if(obj_idx || obj_subidx)
+                    {
                         wkc = ec_readOEsingle(0, obj_subidx, &ODlist, &OElist); // return resulting object entry structure.
-                    printf("  [0x%4.4X.%1d] 0x%4.4X:0x%2.2X 0x%2.2X", abs_offset, abs_bit, obj_idx, obj_subidx, bitlen);
+                    }
+
+                    LOG_DISPLAY("  [0x%4.4X.%1d] 0x%4.4X:0x%2.2X 0x%2.2X", abs_offset, abs_bit, obj_idx, obj_subidx, bitlen);
 
                     if((wkc > 0) && OElist.Entries)
                     {
-                        printf(" %-12s %s\n", dtype2string(OElist.DataType[obj_subidx]), OElist.Name[obj_subidx]);
+                        LOG_DISPLAY(" %-12s %s\n", dtype2string(OElist.DataType[obj_subidx]), OElist.Name[obj_subidx]);
                     }
-
                     else
-                        printf("\n");
+                        LOG_DISPLAY("\n");
+
                     bitoffset += bitlen;
                 };
             };
@@ -456,7 +376,7 @@ int EtherCATManager::slaveinfo_map_SM(int slave)
     outputs_bo = 0;
     inputs_bo = 0;
 
-    printf("PDO mapping according to CoE :\n");
+    LOG_DISPLAY("PDO mapping according to CoE :\n");
     rdl = sizeof(nSM);
     nSM = 0;
 
@@ -493,7 +413,7 @@ int EtherCATManager::slaveinfo_map_SM(int slave)
                 if((iSM == 2) && (tSM == 2)) // SM2 has type 2 == mailbox out, this is a bug in the slave!
                 {
                     SMt_bug_add = 1; // try to correct, this works if the types are 0 1 2 3 and should be 1 2 3 4
-                    printf("Activated SM type workaround, possible incorrect mapping.\n");
+                    LOG_DISPLAY("Activated SM type workaround, possible incorrect mapping.\n");
                 }
                 if(tSM)
                     tSM += SMt_bug_add; // only add if SMt > 0
@@ -501,14 +421,14 @@ int EtherCATManager::slaveinfo_map_SM(int slave)
                 if (tSM == 3) // outputs
                 {
                     /* read the assign RXPDO */
-                    printf("  SM%1d outputs\n     addr b   index: sub bitl data_type    name\n", iSM);
+                    LOG_DISPLAY("  SM%1d outputs\n     addr b   index: sub bitl data_type    name\n", iSM);
                     Tsize = slaveinfo_PDOassign(slave, ECT_SDO_PDOASSIGN + iSM, (int)(ec_slave[slave].outputs - (uint8 *)&IOmap[0]), outputs_bo );
                     outputs_bo += Tsize;
                 }
                 if (tSM == 4) // inputs
                 {
                     /* read the assign TXPDO */
-                    printf("  SM%1d inputs\n     addr b   index: sub bitl data_type    name\n", iSM);
+                    LOG_DISPLAY("  SM%1d inputs\n     addr b   index: sub bitl data_type    name\n", iSM);
                     Tsize = slaveinfo_PDOassign(slave, ECT_SDO_PDOASSIGN + iSM, (int)(ec_slave[slave].inputs - (uint8 *)&IOmap[0]), inputs_bo );
                     inputs_bo += Tsize;
                 }
@@ -609,22 +529,29 @@ int EtherCATManager::slaveinfo_SII_RTxPDO(uint16 slave, uint8 isRxPDO, int mapof
                 if(obj_name)
                     ec_siistring(str_name, slave, obj_name);
                 if (isRxPDO)
-                    printf("  SM%1d RXPDO 0x%4.4X %s\n", PDO->SyncM[PDO->nPDO], PDO->Index[PDO->nPDO], str_name);
+                    LOG_DISPLAY("  SM%1d RXPDO 0x%4.4X %s\n", PDO->SyncM[PDO->nPDO], PDO->Index[PDO->nPDO], str_name);
                 else
-                    printf("  SM%1d TXPDO 0x%4.4X %s\n", PDO->SyncM[PDO->nPDO], PDO->Index[PDO->nPDO], str_name);
-                printf("     addr b   index: sub bitl data_type    name\n");
+                    LOG_DISPLAY("  SM%1d TXPDO 0x%4.4X %s\n", PDO->SyncM[PDO->nPDO], PDO->Index[PDO->nPDO], str_name);
+                LOG_DISPLAY("     addr b   index: sub bitl data_type    name\n");
 
                 /* read all entries defined in PDO */
                 for (entries_iterator = 1; entries_iterator <= entries_num; entries_iterator++)
                 {
                     len_count += 4;
+
                     obj_idx = ec_siigetbyte(slave, start_pos++);
                     obj_idx += (ec_siigetbyte(slave, start_pos++) << 8);
+
                     obj_subidx = ec_siigetbyte(slave, start_pos++);
+
                     obj_name = ec_siigetbyte(slave, start_pos++);
+
                     obj_datatype = ec_siigetbyte(slave, start_pos++);
+
                     bitlen = ec_siigetbyte(slave, start_pos++);
+
                     abs_offset = mapoffset + (bitoffset / 8);
+
                     abs_bit = bitoffset % 8;
 
                     PDO->BitSize[PDO->nPDO] += bitlen;
@@ -634,8 +561,8 @@ int EtherCATManager::slaveinfo_SII_RTxPDO(uint16 slave, uint8 isRxPDO, int mapof
                     if(obj_name)
                         ec_siistring(str_name, slave, obj_name);
 
-                    printf("  [0x%4.4X.%1d] 0x%4.4X:0x%2.2X 0x%2.2X", abs_offset, abs_bit, obj_idx, obj_subidx, bitlen);
-                    printf(" %-12s %s\n", dtype2string(obj_datatype), str_name);
+                    LOG_DISPLAY("  [0x%4.4X.%1d] 0x%4.4X:0x%2.2X 0x%2.2X", abs_offset, abs_bit, obj_idx, obj_subidx, bitlen);
+                    LOG_DISPLAY(" %-12s %s\n", dtype2string(obj_datatype), str_name);
                     bitoffset += bitlen;
                     totalsize += bitlen;
                 }
@@ -670,7 +597,7 @@ int EtherCATManager::slaveinfo_map_SII(int slave)
     int retVal = 0;
     int Tsize, outputs_bitoff, inputs_bitoff;
 
-    printf("PDO mapping according to SII :\n");
+    LOG_DISPLAY("PDO mapping according to SII :\n");
 
     outputs_bitoff = 0;
     inputs_bitoff = 0;
@@ -701,27 +628,28 @@ void EtherCATManager::slaveinfo_sdo(int cnt)
 
     if(ec_readODlist(cnt, &ODlist))
     {
-        printf(" CoE Object Description found, %d entries.\n",ODlist.Entries);
+        LOG_DISPLAY(" CoE Object Description found, %d entries.\n", ODlist.Entries);
+
         for(i = 0 ; i < ODlist.Entries ; i++)
         {
             ec_readODdescription(i, &ODlist);
             while(EcatError)
-                printf("%s", ec_elist2string()); // error list
-            printf(" Index: %4.4x Datatype: %4.4x Objectcode: %2.2x Name: %s\n",
+                LOG_DISPLAY("%s", ec_elist2string()); // error list
+            LOG_DISPLAY(" Index: %4.4x Datatype: %4.4x Objectcode: %2.2x Name: %s\n",
                    ODlist.Index[i], ODlist.DataType[i], ODlist.ObjectCode[i], ODlist.Name[i]);
 
             memset(&OElist, 0, sizeof(OElist));
             ec_readOE(i, &ODlist, &OElist);
-            while(EcatError) printf("%s", ec_elist2string());
+            while(EcatError) LOG_DISPLAY("%s", ec_elist2string());
             for( j = 0 ; j < ODlist.MaxSub[i]+1 ; j++)
             {
                 if ((OElist.DataType[j] > 0) && (OElist.BitLength[j] > 0))
                 {
-                    printf("  Sub: %2.2x Datatype: %4.4x Bitlength: %4.4x Obj.access: %4.4x Name: %s\n",
-                           j, OElist.DataType[j], OElist.BitLength[j], OElist.ObjAccess[j], OElist.Name[j]);
+                    LOG_DISPLAY("  Sub: %2.2x Datatype: %4.4x Bitlength: %4.4x Obj.access: %4.4x Name: %s\n",
+                                j, OElist.DataType[j], OElist.BitLength[j], OElist.ObjAccess[j], OElist.Name[j]);
                     if ((OElist.ObjAccess[j] & 0x0007))
                     {
-                        printf("          Value :%s\n", SDO2string(cnt, ODlist.Index[i], j, OElist.DataType[j]));
+                        LOG_DISPLAY("          Value :%s\n", SDO2string(cnt, ODlist.Index[i], j, OElist.DataType[j]));
                     }
                 }
             }
@@ -729,7 +657,7 @@ void EtherCATManager::slaveinfo_sdo(int cnt)
     }
     else
     {
-        while(EcatError) printf("%s", ec_elist2string());
+        while(EcatError) LOG_DISPLAY("%s", ec_elist2string());
     }
 }
 
@@ -741,112 +669,139 @@ void EtherCATManager::slaveinfo_sdo(int cnt)
  */
 void EtherCATManager::slaveinfo(char *ifname)
 {
-    int cnt, i, j, nSM;
-    uint16 ssigen;
+    int slave_iterator, i, j, nSM;
+    uint16 category_general;
     int expectedWKC;
 
-    printf("Starting slaveinfo\n");
-
+    LOG_DISPLAY("Printing slaves information...\n");
     /* initialise SOEM, bind socket to ifname */
     if (ec_init(ifname))
     {
-        printf("ec_init on %s succeeded.\n",ifname);
+        LOG_DISPLAY("ec_init on %s succeeded.\n",ifname);
+
         /* find and auto-config slaves */
         if ( ec_config(FALSE, &IOmap) > 0 )
         {
             ec_configdc();
-            while(EcatError) printf("%s", ec_elist2string());
-            printf("%d slaves found and configured.\n",ec_slavecount);
+
+            while(EcatError)
+                LOG_DISPLAY("%s", ec_elist2string()); // error list
+
+            LOG_DISPLAY("%d slaves found and configured.\n",ec_slavecount);
+
             expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
-            printf("Calculated workcounter %d\n", expectedWKC);
+            LOG_DISPLAY("Calculated workcounter %d\n", expectedWKC);
+
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 3);
             if (ec_slave[0].state != EC_STATE_SAFE_OP )
             {
-                printf("Not all slaves reached safe operational state.\n");
+                LOG_DISPLAY("Not all slaves reached safe operational state.\n");
                 ec_readstate();
                 for(i = 1; i<=ec_slavecount ; i++)
                 {
                     if(ec_slave[i].state != EC_STATE_SAFE_OP)
                     {
-                        printf("Slave %d State=%2x StatusCode=%4x : %s\n",
-                               i, ec_slave[i].state, ec_slave[i].ALstatuscode, ec_ALstatuscode2string(ec_slave[i].ALstatuscode));
+                        LOG_DISPLAY("Slave %d State=%2x StatusCode=%4x : %s\n",
+                                                                 i, ec_slave[i].state, ec_slave[i].ALstatuscode, ec_ALstatuscode2string(ec_slave[i].ALstatuscode));
                     }
                 }
             }
 
-
             ec_readstate();
-            for( cnt = 1 ; cnt <= ec_slavecount ; cnt++)
+            for( slave_iterator = 1 ; slave_iterator <= ec_slavecount ; slave_iterator++)
             {
-                printf("\nSlave:%d\n Name:%s\n Output size: %dbits\n Input size: %dbits\n State: %d\n Delay: %d[ns]\n Has DC: %d\n",
-                       cnt, ec_slave[cnt].name, ec_slave[cnt].Obits, ec_slave[cnt].Ibits,
-                       ec_slave[cnt].state, ec_slave[cnt].pdelay, ec_slave[cnt].hasdc);
-                if (ec_slave[cnt].hasdc) printf(" DCParentport:%d\n", ec_slave[cnt].parentport);
-                printf(" Activeports:%d.%d.%d.%d\n", (ec_slave[cnt].activeports & 0x01) > 0 ,
-                       (ec_slave[cnt].activeports & 0x02) > 0 ,
-                       (ec_slave[cnt].activeports & 0x04) > 0 ,
-                       (ec_slave[cnt].activeports & 0x08) > 0 );
-                printf(" Configured address: %4.4x\n", ec_slave[cnt].configadr);
-                printf(" Man: %8.8x ID: %8.8x Rev: %8.8x\n", (int)ec_slave[cnt].eep_man, (int)ec_slave[cnt].eep_id, (int)ec_slave[cnt].eep_rev);
+                LOG_DISPLAY("\nSlave:%d\n Name:%s\n Output size: %dbits\n Input size: %dbits\n State: %d\n Delay: %d[ns]\n Has DC: %d\n",
+                            slave_iterator, ec_slave[slave_iterator].name, ec_slave[slave_iterator].Obits, ec_slave[slave_iterator].Ibits,
+                            ec_slave[slave_iterator].state, ec_slave[slave_iterator].pdelay, ec_slave[slave_iterator].hasdc);
+
+                if (ec_slave[slave_iterator].hasdc)
+                    LOG_DISPLAY(" DCParentport:%d\n", ec_slave[slave_iterator].parentport);
+
+                LOG_DISPLAY(" Activeports:%d.%d.%d.%d\n", (ec_slave[slave_iterator].activeports & 0x01) > 0 ,
+                                                         (ec_slave[slave_iterator].activeports & 0x02) > 0 ,
+                                                         (ec_slave[slave_iterator].activeports & 0x04) > 0 ,
+                                                         (ec_slave[slave_iterator].activeports & 0x08) > 0 );
+
+                LOG_DISPLAY(" Configured address: %4.4x\n", ec_slave[slave_iterator].configadr);
+
+                LOG_DISPLAY(" Man: %8.8x ID: %8.8x Rev: %8.8x\n", (int)ec_slave[slave_iterator].eep_man, (int)ec_slave[slave_iterator].eep_id, (int)ec_slave[slave_iterator].eep_rev);
+
                 for(nSM = 0 ; nSM < EC_MAXSM ; nSM++)
                 {
-                    if(ec_slave[cnt].SM[nSM].StartAddr > 0)
-                        printf(" SM%1d A:%4.4x L:%4d F:%8.8x Type:%d\n",nSM, ec_slave[cnt].SM[nSM].StartAddr, ec_slave[cnt].SM[nSM].SMlength,
-                               (int)ec_slave[cnt].SM[nSM].SMflags, ec_slave[cnt].SMtype[nSM]);
+                    if(ec_slave[slave_iterator].SM[nSM].StartAddr > 0)
+                        /*
+                         * A : StartAddr
+                         * L : SMlength
+                         * F : SMflags
+                         * Type : SMtype
+                         */
+                        LOG_DISPLAY(" SM%1d A:%4.4x L:%4d F:%8.8x Type:%d\n",nSM, ec_slave[slave_iterator].SM[nSM].StartAddr, ec_slave[slave_iterator].SM[nSM].SMlength,
+                                    (int)ec_slave[slave_iterator].SM[nSM].SMflags, ec_slave[slave_iterator].SMtype[nSM]);
                 }
-                for(j = 0 ; j < ec_slave[cnt].FMMUunused ; j++)
+
+                for(j = 0 ; j < ec_slave[slave_iterator].FMMUunused ; j++)
                 {
-                    printf(" FMMU%1d Ls:%8.8x Ll:%4d Lsb:%d Leb:%d Ps:%4.4x Psb:%d Ty:%2.2x Act:%2.2x\n", j,
-                           (int)ec_slave[cnt].FMMU[j].LogStart, ec_slave[cnt].FMMU[j].LogLength, ec_slave[cnt].FMMU[j].LogStartbit,
-                           ec_slave[cnt].FMMU[j].LogEndbit, ec_slave[cnt].FMMU[j].PhysStart, ec_slave[cnt].FMMU[j].PhysStartBit,
-                           ec_slave[cnt].FMMU[j].FMMUtype, ec_slave[cnt].FMMU[j].FMMUactive);
+                    /*
+                     * Ls : LogStart
+                     * Ll : LogLength
+                     * Lsb : LogStartbit
+                     * Leb : LogEndbit
+                     * Ps : PhysStart
+                     * Psb : PhysStartBit
+                     * Ty : FMMUtype
+                     * Act : FMMUactive
+                     */
+                    LOG_DISPLAY(" FMMU%1d Ls:%8.8x Ll:%4d Lsb:%d Leb:%d Ps:%4.4x Psb:%d Ty:%2.2x Act:%2.2x\n", j,
+                                (int)ec_slave[slave_iterator].FMMU[j].LogStart, ec_slave[slave_iterator].FMMU[j].LogLength, ec_slave[slave_iterator].FMMU[j].LogStartbit,
+                                ec_slave[slave_iterator].FMMU[j].LogEndbit, ec_slave[slave_iterator].FMMU[j].PhysStart, ec_slave[slave_iterator].FMMU[j].PhysStartBit,
+                                ec_slave[slave_iterator].FMMU[j].FMMUtype, ec_slave[slave_iterator].FMMU[j].FMMUactive);
                 }
-                printf(" FMMUfunc 0:%d 1:%d 2:%d 3:%d\n",
-                       ec_slave[cnt].FMMU0func, ec_slave[cnt].FMMU1func, ec_slave[cnt].FMMU2func, ec_slave[cnt].FMMU3func);
-                printf(" MBX length wr: %d rd: %d MBX protocols : %2.2x\n", ec_slave[cnt].mbx_l, ec_slave[cnt].mbx_rl, ec_slave[cnt].mbx_proto);
-                ssigen = ec_siifind(cnt, ECT_SII_GENERAL);
+
+                LOG_DISPLAY(" FMMUfunc 0:%d 1:%d 2:%d 3:%d\n",
+                            ec_slave[slave_iterator].FMMU0func, ec_slave[slave_iterator].FMMU1func, ec_slave[slave_iterator].FMMU2func, ec_slave[slave_iterator].FMMU3func);
+                LOG_DISPLAY(" MBX length wr: %d rd: %d MBX protocols : %2.2x\n", ec_slave[slave_iterator].mbx_l, ec_slave[slave_iterator].mbx_rl, ec_slave[slave_iterator].mbx_proto);
+
+                // SII_GENERAL is Category General
+                category_general = ec_siifind(slave_iterator, ECT_SII_GENERAL);
                 /* SII general section */
-                if (ssigen)
+                if (category_general)
                 {
-                    ec_slave[cnt].CoEdetails = ec_siigetbyte(cnt, ssigen + 0x07);
-                    ec_slave[cnt].FoEdetails = ec_siigetbyte(cnt, ssigen + 0x08);
-                    ec_slave[cnt].EoEdetails = ec_siigetbyte(cnt, ssigen + 0x09);
-                    ec_slave[cnt].SoEdetails = ec_siigetbyte(cnt, ssigen + 0x0a);
-                    if((ec_siigetbyte(cnt, ssigen + 0x0d) & 0x02) > 0)
+                    ec_slave[slave_iterator].CoEdetails = ec_siigetbyte(slave_iterator, category_general + 0x07);
+                    ec_slave[slave_iterator].FoEdetails = ec_siigetbyte(slave_iterator, category_general + 0x08);
+                    ec_slave[slave_iterator].EoEdetails = ec_siigetbyte(slave_iterator, category_general + 0x09);
+                    ec_slave[slave_iterator].SoEdetails = ec_siigetbyte(slave_iterator, category_general + 0x0a);
+                    if((ec_siigetbyte(slave_iterator, category_general + 0x0d) & 0x02) > 0)
                     {
-                        ec_slave[cnt].blockLRW = 1;
+                        ec_slave[slave_iterator].blockLRW = 1;
                         ec_slave[0].blockLRW++;
                     }
-                    ec_slave[cnt].Ebuscurrent = ec_siigetbyte(cnt, ssigen + 0x0e);
-                    ec_slave[cnt].Ebuscurrent += ec_siigetbyte(cnt, ssigen + 0x0f) << 8;
-                    ec_slave[0].Ebuscurrent += ec_slave[cnt].Ebuscurrent;
+                    ec_slave[slave_iterator].Ebuscurrent = ec_siigetbyte(slave_iterator, category_general + 0x0e);
+                    ec_slave[slave_iterator].Ebuscurrent += ec_siigetbyte(slave_iterator, category_general + 0x0f) << 8;
+                    ec_slave[0].Ebuscurrent += ec_slave[slave_iterator].Ebuscurrent;
                 }
-                printf(" CoE details: %2.2x FoE details: %2.2x EoE details: %2.2x SoE details: %2.2x\n",
-                       ec_slave[cnt].CoEdetails, ec_slave[cnt].FoEdetails, ec_slave[cnt].EoEdetails, ec_slave[cnt].SoEdetails);
-                printf(" Ebus current: %d[mA]\n only LRD/LWR:%d\n",
-                       ec_slave[cnt].Ebuscurrent, ec_slave[cnt].blockLRW);
-                if ((ec_slave[cnt].mbx_proto & ECT_MBXPROT_COE) && printSDO)
-                    si_sdo(cnt);
+                LOG_DISPLAY(" CoE details: %2.2x FoE details: %2.2x EoE details: %2.2x SoE details: %2.2x\n",
+                            ec_slave[slave_iterator].CoEdetails, ec_slave[slave_iterator].FoEdetails, ec_slave[slave_iterator].EoEdetails, ec_slave[slave_iterator].SoEdetails);
+                LOG_DISPLAY(" Ebus current: %d[mA]\n only LRD/LWR:%d\n",
+                            ec_slave[slave_iterator].Ebuscurrent, ec_slave[slave_iterator].blockLRW);
+                if ((ec_slave[slave_iterator].mbx_proto & ECT_MBXPROT_COE) && printSDO)
+                    slaveinfo_sdo(slave_iterator);
                 if(printMAP)
                 {
-                    if (ec_slave[cnt].mbx_proto & ECT_MBXPROT_COE)
-                        si_map_sdo(cnt);
-                    else
-                        si_map_sii(cnt);
+                    //if (ec_slave[slave_iterator].mbx_proto & ECT_MBXPROT_COE)
+                        slaveinfo_map_SM(slave_iterator);
+                    //else
+                        slaveinfo_map_SII(slave_iterator);
                 }
             }
         }
         else
-        {
-            printf("No slaves found!\n");
-        }
-        printf("End slaveinfo, close socket\n");
-        /* stop SOEM, close socket */
-        ec_close();
+            LOG_DISPLAY("No slaves found!\n");
+
+//        LOG_DISPLAY("End slaveinfo, close socket\n");
+//        /* stop SOEM, close socket */
+//        ec_close();
     }
     else
-    {
-        printf("No socket connection on %s\nExcecute as root\n",ifname);
-    }
+        LOG_DISPLAY("No socket connection on %s\nExcecute as root\n",ifname);
 }
