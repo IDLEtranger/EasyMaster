@@ -1,11 +1,30 @@
 #include "ethercatmanager.h"
+#include "mainwindow.h"
 
-EtherCATManager::EtherCATManager()
+EtherCATManager::EtherCATManager(MainWindow *mainwindow)
+    :_mainwindow(mainwindow)
+    , QObject(mainwindow)
 {
+    // create slavesinfo_Model
+    slavesinfo_Model = new QStandardItemModel(0, FixedColumnCount, this); // 8 columns
+    QStringList headerList = QString("Slave|Index|SubIndex|Name|Value|Type(bit)|Flags").split("|");
+    slavesinfo_Model->setHorizontalHeaderLabels(headerList);
+
     // get ethercat info
     get_netinfo();
+
+    // state poll
+    poll_timer = new QTimer(this);
+    connect(poll_timer, &QTimer::timeout, this, &EtherCATManager::poll_timer_timeout);
 }
 
+EtherCATManager::~EtherCATManager(void)
+{
+    /* stop SOEM, close socket */
+    ec_close();
+
+    delete poll_timer;
+}
 
 
 /**
@@ -25,16 +44,32 @@ void EtherCATManager::get_netinfo(void)
 
 
 
-///**
-// * @brief EtherCATManager::pdoTaskTimout
-// * timer slot function, used for process data communication
-// */
-//void EtherCATManager::pdoTaskTimout(void)
-//{
-//    int wkc = 0;
-//    ec_send_processdata();
-//    wkc = ec_receive_processdata(EC_TIMEOUTRET);
-//}
+/**
+ * @brief EtherCATManager::startPolling
+ */
+void EtherCATManager::startPollingstate(int period)
+{
+    poll_timer->start(period); // per second
+}
+
+
+
+/**
+ * @brief EtherCATManager::poll_timer_timeout
+ */
+void EtherCATManager::poll_timer_timeout(void)
+{
+    if(!_mainwindow->focus_slave.get_focus_slave().isEmpty())
+    {
+        ec_state current_state = ec_state(ec_slave[_mainwindow->focus_slave.get_focus_slave_num()].state);
+        emit change_state_indicator(current_state);
+    }
+    else
+    {
+        ec_state current_state = ec_state(ec_readstate());
+        emit change_state_indicator(current_state);
+    }
+}
 
 
 
@@ -60,10 +95,10 @@ void EtherCATManager::connect2slaves(void)
     // connect to slave
     LOG_DISPLAY("SOEM (Simple Open EtherCAT Master) ON\n");
 
-    // display slaves information in LOG box
-    slaveinfo(ifname);
+    // display slaves information in LOG box, init slavesinfo_Model data
+    slavesinfo(ifname);
 
-    LOG_DISPLAY("End program\n");
+    startPollingstate(100);
 }
 
 
@@ -262,6 +297,56 @@ char* EtherCATManager::SDO2string(uint16 slave, uint16 index, uint8 subidx, uint
     }
 }
 
+
+
+/**
+ * @brief EtherCATManager::objectcode2string
+ * convert object code to string
+ * reference ETG1000_6
+ */
+QString EtherCATManager::objectaccess2string(uint8 objectaccess)
+{
+    QString ObjectAccess;
+    if(objectaccess & Pre_R)
+        ObjectAccess += "PR";
+    if(objectaccess & Safe_R)
+        ObjectAccess += " SR";
+    if(objectaccess & OP_R)
+        ObjectAccess += " OR";
+    if(objectaccess & Pre_W)
+        ObjectAccess += " PW";
+    if(objectaccess & Safe_W)
+        ObjectAccess += " SW";
+    if(objectaccess & OP_W)
+        ObjectAccess += " OW";
+    if(objectaccess & RxPDO_map)
+        ObjectAccess += " RxPDO";
+    if(objectaccess & TxPDO_map)
+        ObjectAccess += " TxPDO";
+
+    return ObjectAccess;
+}
+
+
+
+/**
+ * @brief EtherCATManager::objectcode2string
+ * convert object code to string
+ * reference ETG1000_6-page72
+ */
+QString EtherCATManager::objectcode2string(uint8 objectcode)
+{
+    switch (objectcode)
+    {
+        case 0x02: return "DOMAIN";
+        case 0x05: return "DEFTYPE";
+        case 0x06: return "DEFSTRUCT";
+        case 0x07: return "VARIABLE";
+        case 0x08: return "ARRAY";
+        case 0x09: return "RECORD";
+        default: return "UNKNOWN";
+    }
+}
 
 
 /**
@@ -619,38 +704,81 @@ int EtherCATManager::slaveinfo_map_SII(int slave)
  * @brief EtherCATManager::slaveinfo_sdo
  *
  */
-void EtherCATManager::slaveinfo_sdo(int cnt)
+void EtherCATManager::slaveinfo_sdo(int slave_iterator)
 {
-    int i, j;
+    int iterator_Index, iterator_SubIndex;
 
     ODlist.Entries = 0;
     memset(&ODlist, 0, sizeof(ODlist));
+    QModelIndex parent_index = slaveIndices[slave_iterator-1];
 
-    if(ec_readODlist(cnt, &ODlist))
+    if(ec_readODlist(slave_iterator, &ODlist))
     {
         LOG_DISPLAY(" CoE Object Description found, %d entries.\n", ODlist.Entries);
 
-        for(i = 0 ; i < ODlist.Entries ; i++)
+        for(iterator_Index = 0 ; iterator_Index < ODlist.Entries ; iterator_Index++)
         {
-            ec_readODdescription(i, &ODlist);
+            ec_readODdescription(iterator_Index, &ODlist);
             while(EcatError)
                 LOG_DISPLAY("%s", ec_elist2string()); // error list
+
             LOG_DISPLAY(" Index: %4.4x Datatype: %4.4x Objectcode: %2.2x Name: %s\n",
-                   ODlist.Index[i], ODlist.DataType[i], ODlist.ObjectCode[i], ODlist.Name[i]);
+                   ODlist.Index[iterator_Index], ODlist.DataType[iterator_Index], ODlist.ObjectCode[iterator_Index], ODlist.Name[iterator_Index]);
+
+            // add to slavesinfo_Model
+            QList<QStandardItem*> rowItems_OD;
+            QStandardItem *index_item = new QStandardItem(QString::number(ODlist.Index[iterator_Index],16));
+            QStandardItem *objectcode_item = new QStandardItem(QString(objectcode2string(ODlist.ObjectCode[iterator_Index])));
+            QStandardItem *name_item = new QStandardItem(ODlist.Name[iterator_Index]);
+            rowItems_OD.append(new QStandardItem()); // skip slave
+            rowItems_OD.append(index_item); // index
+            rowItems_OD.append(new QStandardItem()); // skip subindex
+            rowItems_OD.append(name_item); // name
+            rowItems_OD.append(new QStandardItem()); // skip value
+            rowItems_OD.append(new QStandardItem()); // skip type
+            rowItems_OD.append(objectcode_item); // flags
+            QStandardItem *parent_slave = slavesinfo_Model->itemFromIndex(parent_index);
+            parent_slave->appendRow(rowItems_OD);
+
+            QColor backgroundColor(174, 214, 171, 50); // Light green with alpha transparency
+            for (int i = 1; i < rowItems_OD.size(); ++i)
+            {
+                rowItems_OD[i]->setBackground(backgroundColor);
+            }
 
             memset(&OElist, 0, sizeof(OElist));
-            ec_readOE(i, &ODlist, &OElist);
-            while(EcatError) LOG_DISPLAY("%s", ec_elist2string());
-            for( j = 0 ; j < ODlist.MaxSub[i]+1 ; j++)
+            ec_readOE(iterator_Index, &ODlist, &OElist);
+
+            while(EcatError)
+                LOG_DISPLAY("%s", ec_elist2string());
+
+            for( iterator_SubIndex = 0 ; iterator_SubIndex < ODlist.MaxSub[iterator_Index]+1 ; iterator_SubIndex++)
             {
-                if ((OElist.DataType[j] > 0) && (OElist.BitLength[j] > 0))
+                if ((OElist.DataType[iterator_SubIndex] > 0) && (OElist.BitLength[iterator_SubIndex] > 0))
                 {
                     LOG_DISPLAY("  Sub: %2.2x Datatype: %4.4x Bitlength: %4.4x Obj.access: %4.4x Name: %s\n",
-                                j, OElist.DataType[j], OElist.BitLength[j], OElist.ObjAccess[j], OElist.Name[j]);
-                    if ((OElist.ObjAccess[j] & 0x0007))
+                                iterator_SubIndex, OElist.DataType[iterator_SubIndex], OElist.BitLength[iterator_SubIndex], OElist.ObjAccess[iterator_SubIndex], OElist.Name[iterator_SubIndex]);
+                    if ((OElist.ObjAccess[iterator_SubIndex] & 0x0007))
                     {
-                        LOG_DISPLAY("          Value :%s\n", SDO2string(cnt, ODlist.Index[i], j, OElist.DataType[j]));
+                        LOG_DISPLAY("          Value :%s\n", SDO2string(slave_iterator, ODlist.Index[iterator_Index], iterator_SubIndex, OElist.DataType[iterator_SubIndex]));
                     }
+                    QList<QStandardItem*> rowItems_OE;
+                    QStandardItem *subindex_item = new QStandardItem(QString("%1").arg(iterator_SubIndex, 2, 10, QChar('0')));
+                    QStandardItem *name_item = new QStandardItem(OElist.Name[iterator_SubIndex]);
+                    QStandardItem *datatype_item = new QStandardItem(QString(dtype2string(OElist.DataType[iterator_SubIndex])) + QString(" (%1)").arg(OElist.BitLength[iterator_SubIndex]));
+                    QStandardItem *objaccess_item = new QStandardItem(QString(objectaccess2string(OElist.ObjAccess[iterator_SubIndex])));
+                    QStandardItem *value_item = new QStandardItem(QString(SDO2string(slave_iterator, ODlist.Index[iterator_Index], iterator_SubIndex, OElist.DataType[iterator_SubIndex])));
+                    rowItems_OE.append(new QStandardItem()); // skip slave
+                    rowItems_OE.append(new QStandardItem()); // skip index
+                    rowItems_OE.append(subindex_item); // subindex
+                    rowItems_OE.append(name_item); // name
+                    rowItems_OE.append(value_item); // value
+                    rowItems_OE.append(datatype_item); // datatype
+                    rowItems_OE.append(objaccess_item); // objaccess
+                    // get parent node's main node
+                    QStandardItem *main_index_item = index_item->parent()->child(index_item->row(), 0);
+                    main_index_item->appendRow(rowItems_OE);
+
                 }
             }
         }
@@ -667,7 +795,7 @@ void EtherCATManager::slaveinfo_sdo(int cnt)
  * @brief EtherCATManager::slaveinfo
  *
  */
-void EtherCATManager::slaveinfo(char *ifname)
+void EtherCATManager::slavesinfo(char *ifname)
 {
     int slave_iterator, i, j, nSM;
     uint16 category_general;
@@ -687,6 +815,22 @@ void EtherCATManager::slaveinfo(char *ifname)
             while(EcatError)
                 LOG_DISPLAY("%s", ec_elist2string()); // error list
 
+            for(int i = 1 ; i <= ec_slavecount ; i++)
+            {
+                /***** populate slavesinfo_Model *****/
+                // get slaves's name and append to slavesinfo_Model
+                QStandardItem *slave_name_item = new QStandardItem(ec_slave[i].name);
+                slavesinfo_Model->appendRow(slave_name_item);
+                QColor complementaryColor(255, 248, 210, 200);  // Light yellow with alpha transparency
+                slave_name_item->setBackground(complementaryColor);
+                QModelIndex index = slavesinfo_Model->indexFromItem(slave_name_item);
+                // fill slaveIndices with index of each slave
+                slaveIndices.append(index);
+
+                // get slave name cooresponding slave_index
+                slaveName2index.insert(ec_slave[i].name, i);
+            }
+
             LOG_DISPLAY("%d slaves found and configured.\n",ec_slavecount);
 
             expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
@@ -694,10 +838,11 @@ void EtherCATManager::slaveinfo(char *ifname)
 
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 3);
+
             if (ec_slave[0].state != EC_STATE_SAFE_OP )
             {
                 LOG_DISPLAY("Not all slaves reached safe operational state.\n");
-                ec_readstate();
+
                 for(i = 1; i<=ec_slavecount ; i++)
                 {
                     if(ec_slave[i].state != EC_STATE_SAFE_OP)
@@ -708,15 +853,15 @@ void EtherCATManager::slaveinfo(char *ifname)
                 }
             }
 
-            ec_readstate();
             for( slave_iterator = 1 ; slave_iterator <= ec_slavecount ; slave_iterator++)
             {
                 LOG_DISPLAY("\nSlave:%d\n Name:%s\n Output size: %dbits\n Input size: %dbits\n State: %d\n Delay: %d[ns]\n Has DC: %d\n",
                             slave_iterator, ec_slave[slave_iterator].name, ec_slave[slave_iterator].Obits, ec_slave[slave_iterator].Ibits,
                             ec_slave[slave_iterator].state, ec_slave[slave_iterator].pdelay, ec_slave[slave_iterator].hasdc);
 
+
                 if (ec_slave[slave_iterator].hasdc)
-                    LOG_DISPLAY(" DCParentport:%d\n", ec_slave[slave_iterator].parentport);
+                    LOG_DISPLAY(" Parentport:%d\n", ec_slave[slave_iterator].parentport);
 
                 LOG_DISPLAY(" Activeports:%d.%d.%d.%d\n", (ec_slave[slave_iterator].activeports & 0x01) > 0 ,
                                                          (ec_slave[slave_iterator].activeports & 0x02) > 0 ,
@@ -784,24 +929,24 @@ void EtherCATManager::slaveinfo(char *ifname)
                             ec_slave[slave_iterator].CoEdetails, ec_slave[slave_iterator].FoEdetails, ec_slave[slave_iterator].EoEdetails, ec_slave[slave_iterator].SoEdetails);
                 LOG_DISPLAY(" Ebus current: %d[mA]\n only LRD/LWR:%d\n",
                             ec_slave[slave_iterator].Ebuscurrent, ec_slave[slave_iterator].blockLRW);
+
                 if ((ec_slave[slave_iterator].mbx_proto & ECT_MBXPROT_COE) && printSDO)
                     slaveinfo_sdo(slave_iterator);
+
                 if(printMAP)
                 {
-                    //if (ec_slave[slave_iterator].mbx_proto & ECT_MBXPROT_COE)
+                    if (ec_slave[slave_iterator].mbx_proto & ECT_MBXPROT_COE)
                         slaveinfo_map_SM(slave_iterator);
-                    //else
+                    else
                         slaveinfo_map_SII(slave_iterator);
                 }
             }
         }
         else
             LOG_DISPLAY("No slaves found!\n");
-
-//        LOG_DISPLAY("End slaveinfo, close socket\n");
-//        /* stop SOEM, close socket */
-//        ec_close();
     }
     else
         LOG_DISPLAY("No socket connection on %s\nExcecute as root\n",ifname);
 }
+
+

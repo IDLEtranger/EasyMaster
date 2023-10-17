@@ -27,10 +27,14 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         soem/inc/ethercat.h soem/inc/ethercatbase.h soem/inc/ethercatcoe.h soem/inc/ethercatconfig.h soem/inc/ethercatconfiglist.h soem/inc/ethercatdc.h soem/inc/ethercateoe.h soem/inc/ethercatfoe.h soem/inc/ethercatmain.h soem/inc/ethercatprint.h soem/inc/ethercatsoe.h soem/inc/ethercattype.h soem/inc/inttypes.h soem/inc/nicdrv.h soem/inc/osal.h soem/inc/osal_defs.h soem/inc/osal_win32.h soem/inc/oshw.h soem/inc/stdint.h soem/lib/soem.lib soem/wpcap/Include/pcap/bluetooth.h soem/wpcap/Include/pcap/bpf.h soem/wpcap/Include/pcap/namedb.h soem/wpcap/Include/pcap/pcap.h soem/wpcap/Include/pcap/sll.h soem/wpcap/Include/pcap/usb.h soem/wpcap/Include/pcap/vlan.h soem/wpcap/Include/bittypes.h soem/wpcap/Include/ip6_misc.h soem/wpcap/Include/Packet32.h soem/wpcap/Include/pcap-bpf.h soem/wpcap/Include/pcap-namedb.h soem/wpcap/Include/pcap-stdinc.h soem/wpcap/Include/pcap.h soem/wpcap/Include/remote-ext.h soem/wpcap/Include/Win32-Extensions.h soem/wpcap/Lib/x64/Packet.lib soem/wpcap/Lib/x64/wpcap.lib soem/wpcap/Lib/libpacket.a soem/wpcap/Lib/libwpcap.a soem/wpcap/Lib/Packet.lib soem/wpcap/Lib/wpcap.lib
         user/StayOpen_QMenu/stayopenmenu.h user/StayOpen_QMenu/stayopenmenu.cpp
         user/Communication/ethercatmanager.h user/Communication/ethercatmanager.cpp
+        user/Information/slaveinfo.h user/Information/slaveinfo.cpp
+        user/CustomTreeView/customtreeview.h user/CustomTreeView/customtreeview.cpp
     )
 #***************************************************************************
 target_include_directories(EasyMaster PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR}/user/StayOpen_Qmenu
+                           ${CMAKE_CURRENT_SOURCE_DIR}/user/CustomTreeView
+                           ${CMAKE_CURRENT_SOURCE_DIR}/user/Information
                            ${CMAKE_CURRENT_SOURCE_DIR}/user/Communication
 )
 #***************************************************************************
